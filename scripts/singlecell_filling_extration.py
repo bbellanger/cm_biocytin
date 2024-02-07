@@ -29,21 +29,13 @@ FillConverter = jimport('sc.fiji.snt.FillConverter')
 FillerThread = jimport('sc.fiji.snt.tracing.FillerThread')
 Reciprocal = jimport('sc.fiji.snt.tracing.cost.Reciprocal')
 ImgUtils = jimport('sc.fiji.snt.util.ImgUtils')
-WindowManager = jimport('ij.WindowManager')
+
+# In order to save images from the reconstruction
+FileSaver = jimport('ij.io.FileSaver')
 
 # Import tools for analysis
 TreeAnalyzer = jimport('sc.fiji.snt.analysis.TreeAnalyzer')
-
-# Modules for clustering
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.cluster import AgglomerativeClustering
-from scipy.cluster.hierarchy import dendrogram
-# SNT clustering
-PersistenceAnalyzer = jimport('sc.fiji.snt.analysis.PersistenceAnalyzer')
-AllenUtils = jimport('sc.fiji.snt.annotation.AllenUtils')
-Viewer3D = jimport('sc.fiji.snt.viewer.Viewer3D')
-ColorTables = jimport('net.imagej.display.ColorTables')
+# ShollAnalyzer = jimport('sc.fiji.snt.analysis.ShollAnalyzer')
 
 
 def copyAxes(dataset, out_dataset):
@@ -80,7 +72,8 @@ def showBinaryMask(dataset, converter):
     copyAxes(dataset, output)
     ij.ui().show(output)
 
-def showDistanceMap(dataset, converter, filename):
+
+def showDistanceMap(dataset, converter):
     # The node distance is stored internally as a Double,
     # but we can convert it to Float to display it
     output = ij.op().run("create.img", dataset, FloatType())
@@ -103,8 +96,11 @@ def showDistanceMap(dataset, converter, filename):
     )
     distanceImp.setTitle("Annotated Distance Map")
     distanceImp.show()
-    # Save the image in output/img
-    ij.IJ.save(distanceImp, "../output/img/" + f'{filename}_DistanceMap.tif')
+    image_name = "20191230_6_1"
+    fs = FileSaver(distanceImp)
+    folder = "../output/img"
+    filepath = folder + "/" + image_name + ".tif"
+
 
 def showLabelMask(dataset, converter):
     # Choose the integer type based on the cardinality of
@@ -124,16 +120,21 @@ def showLabelMask(dataset, converter):
     labelImp.setTitle("Label Mask")
     labelImp.show()
 
-def tracer(filename):
+
+def tracer():
     # Paths for traces and file
+    filename = "20191230_6_1"
     filepath = f'../input/{filename}.tif'
     trace_path = f'../input/{filename}.traces'
+
     # Load personal traces and stack for reconstruction
     tree = Tree(trace_path)
     dataset = ij.io().open(filepath)
+
     # Assign the scale metadata of the image to the Tree object
     # Otherwise, it won't know the mapping from world coordinates to voxel coordinates
     tree.assignImage(dataset)
+
     # Compute the minimum and maximum pixel intensities in the image.
     # These values are used by the search cost function to rescale
     # image values to a standardized interval (0.0 - 255.0) prior to
@@ -145,8 +146,10 @@ def tracer(filename):
     # distance magnitudes depend on the underlying function of intensity. For example,
     # the costs for OneMinusErf can go as low as 1.0 x 10^-75, so selecting a good threshold
     # is usually easier done interactivly via the GUI.
+
     min_max = ij.op().stats().minMax(dataset)
     cost = Reciprocal(min_max.getA().getRealDouble(), min_max.getB().getRealDouble())
+
     # Build the filler instance with a manually selected threshold
     threshold = 0.02
     fillers = []
@@ -168,32 +171,35 @@ def tracer(filename):
         # Now run it. This could also be done in a worker thread
         filler.run()
         fillers.append(filler)
+
     # FillConverter accepts a list of (completed) FillerThread instances
     converter = FillConverter(fillers)
+
     showBinaryMask(dataset, converter)
     showGrayMask(dataset, converter)
     showLabelMask(dataset, converter)
     # For some reason, the distance map
     # must be shown last for the scale bar to show correctly??
-    showDistanceMap(dataset, converter, filename)
+    showDistanceMap(dataset, converter)
     time.sleep(50)
 
 
-# Clustering Morphologies Using Persitent Homology
-# Output a dendrogram of the population from the batch
-# def fetch_reconstruction(id_list):
-#     tree_list: []
+# Extract csv file with all the characteristics from the reconstruction
 
-# Extract csv file with all the features from the reconstruction file
-def extractcsv(filename, data):
+def extractcsv():
     # Load personal traces and stack for TreeAnalyzer
-    tree = Tree(f'../input/{filename}.traces')
-    dataset = ij.io().open(f'../input/{filename}.tf')
+    image_name = "20191230_6_1"
+    tree = Tree("../input/" + image_name + ".traces")
+    dataset = ij.io().open("../input/" + image_name + '.tif')
+
     # Instantiate the analyzer
     analyzer = TreeAnalyzer(tree)
+
     # print("Highest Path order: ", analyzer.getHighestPathOrder())
+
     # Extract the same variable as for the cm_golgi staining project
     # and use the same exact name for the variables
+
     Sum_Length = analyzer.getCableLength()
     # Sum_N_tips = analyzer.getNtips()
     Avg_Branch_pathlength = analyzer.getAvgBranchLength()
@@ -228,7 +234,7 @@ def extractcsv(filename, data):
     print(" ")
     print('---------------------------------')
     print(" ")
-    print("Neuron: ", filename)
+    print("Neuron: ", image_name)
     print(" ")
     print("Cable length: ", Sum_Length)
     # print("Nb of tips: ", Sum_N_tips)
@@ -248,58 +254,23 @@ def extractcsv(filename, data):
     # Build a dictionary from the extracted variables
     # Save a csv file from it with Pandas
     my_dictionary = {
-        'image': filename,
+        'neuron': image_name,
         'Sum_Length': Sum_Length, 'Avg_Branch_pathlength': Avg_Branch_pathlength,
         'Avg_Width': Avg_Width, 'Avg_Depth': Avg_Depth, 'Avg_Partition_asymmetry': Avg_Partition_asymmetry,
         'Avg_Contraction': Avg_Contraction, 'Avg_Fractal_Dim': Avg_Fractal_Dim,
         'Avg_Bif_ampl_remote': Avg_Bif_ampl_remote
     }
-    df_dictionary = pd.DataFrame.from_dict(my_dictionary, orient='index').T
-    print(data)
-    return df_dictionary
-    time.sleep(25)
+
+    data = pd.DataFrame.from_dict(my_dictionary, orient='index').T
+    data.to_csv('../build/' + image_name + '.csv', index=False)
+
+    # time.sleep(300)
+
     # Instantiate a new sholl analyzer and process the same tree
     # shollanalyzer = ShollAnalyzer(tree)
     # print("Metrics: ", shollanalyzer.getMetrics())
 
-def main():
-    list_files = pd.read_fwf("../table/list.txt", header=0)
-    data = []
-    for img_id in list_files:
-        filename = img_id
-        print(' ')
-        print('Input list:')
-        print(list_files)
-        # print(img_id)
-        # print(filename)
-        tracer(filename)
-        dfdict = extractcsv(filename, data)
-        data.append(dfdict)
-    data = pd.concat(data, ignore_index=True)
-    data.to_csv(f'../build/data.csv', index=False)
-    print(f'Saved:')
-    print(f'{list_files}')
-    print('features in build directory')
 
-
-# def clustering_dendrogram():
-#     list_files = pd.read_fwf("../table/list.txt", header=0)
-#     tree_list = []
-#     for filename in list_files:
-#         # Path for traces and files
-#         file_path = f'../input/{filename}.tif'
-#         trace_path = (f'../input/{filename}.traces')
-#         # Load personnal traces and stack
-#         tree = Tree(trace_path)
-#         dataset = ij.io().open(file_path)
-#         # Assign the scale metadata to the tree object
-#         # Transmits world coordinates too voxel coordinates
-#         tree.assignImage(dataset)
-#         # tree_map[tree.getLabel()[0:6]] = tree
-#         # tree.setLabel(tree.getLabel() + ' ' + group_label)
-#         tree_list.append(tree)
-#         return tree_list
-
-
-# main()
-# clustering_dendrogram()
+# Run the following
+tracer()
+extractcsv()

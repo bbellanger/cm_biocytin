@@ -39,6 +39,7 @@ mamba deactivate
 ## Installation
 
 "filling_extraction.py" needs python 3.8 as well as Maven and openjdk 11.0 in order to work (works with Jython). The script for tracing and extraction of the data from the neuron trace needs to run from a pyimagej environnement.
+ Pip install scipy, numpy, sklearn and matplotlib in your environnement if needed.
 
 ### On Linux
 

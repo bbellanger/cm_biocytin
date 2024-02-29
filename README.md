@@ -15,6 +15,11 @@ E --> F(Prediction of firing properties from the morphology)
 
 ## key features
 
+ - Extraction of Cell morphology features from SNT traces.
+ - Merging extracted dataset with electrophysiology data.
+ - Predictive modelisation from morphologycal features.
+ - Prediction of firing patterns.
+
 ## Usage
 
 ### Input
@@ -76,20 +81,53 @@ python -c 'import imagej; ij = imagej.init("2.14.0"); print(ij.getVersion())'
 mamba deactivate
 ```
 
+5. Setup a Python virtual envirronment with Jupyter
+
+Setting up a virtual envirronment.
+
+```bash
+python3 -m venv --upgrade-deps venv
+venv/bin/python -m ensurepip
+venv/bin/python -m pip install --upgrade setuptools pip wheel
+```
+
+Install the most recent versions of the dependencies.
+
+```bash
+venv/bin/python -m pip install -e .
+```
+
+Install Jupyter lab into the envirronment.
+
+```bash
+venv/bin/python -m pip install ipykernel
+venv/bin/python -m ipykernel install --user --name=cm_biocytin
+```
+
+Start the python virtual envirronment in order to explore the data and build your model via jupyter (from the folder 'cm_biocytin'):
+
+```bash
+source venv/bin/activate
+```
+
 ## Configuration options & troubleshoot
 
 - Often the java heap size is not sufficient enought to run the script on large images/datasets. You can simply increase the java heap size if so you get the following error:
+
 ```bash
 java.lang.OutOfMemoryError: Java heap space
 ```
+
 or if the script breaks before the end.
 
 ## Contribution
 
 ## Licence
+
 Redistribution, use and modification of this software is permitted provided that the above copyright and this notice and the following disclaimer are retained.
 
-THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+This software is provided by the author and contributors 'as is' and any express or implied warranties, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose are disclaimed. In no event shall the author or contributors be liable for any direct, indirect, incidental, special, exemplary, or consequential damages (including, but not limited to, procurement of substitute goods or services; loss of use, DATA, or profits; or buisness interruption) however caused and on any theory of liebility, whether in contract, strict liability, or tort (including negligence or otherwise) arising in any way out of the use of this software, even if advised of the possibility of such damage.
+
 ## Aknowledgements
 
 This project wouldn't be possible without SNT add-on for ImageJ developped by Tiago Ferreira nor the constent enrichments that the community of https://forum.image.sc provides.

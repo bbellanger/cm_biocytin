@@ -238,6 +238,10 @@ def extractcsv(filename):
     # Avg_Terminal_degree =
     Avg_Bif_ampl_remote = analyzer.getAvgRemoteBifAngle()
 
+    Avg_Fragmentation = analyzer.getAvgFragmentation()
+    nb_spines = analyzer.getNoSpinesOrVaricosities()
+    density_spines = analyzer.getSpineOrVaricosityDensity()
+
     # Max_Bif_ampl_local =
     # Max_Bif_ampl_remote =
     # Max_Bif_tilt_local =
@@ -259,8 +263,8 @@ def extractcsv(filename):
     branch_counts = stra_analyzer.getBranchCounts()
     branch_point_cnt = stra_analyzer.getBranchPointCounts()
 
-    strahler_graph.show()
-    # Save the graph ?
+    # Plot and show SNT Strahler graph
+    # strahler_graph.show()
     # ij.IJ.save(strahler_graph, "../output/strahler/" + f'{filename}_Strahler_graph')
     # time.sleep(20)
 
@@ -282,6 +286,9 @@ def extractcsv(filename):
     print("Avg fractal dimension: ", Avg_Fractal_Dim)
     print("Avg remote bifurcation angle: ", Avg_Bif_ampl_remote)
     print("Avg width: ", Avg_Width)
+    print("Avg_fragmentation: ", Avg_Fragmentation)
+    print("Number of spines/varicosities", nb_spines)
+    print("Density of spines/varicosities", density_spines)
     print(" ")
     print("Number of roots", nb_root)
     print("highest branch", hgst_branch)
@@ -298,8 +305,9 @@ def extractcsv(filename):
         'image': filename,
         'Sum_Length': Sum_Length, 'Avg_Branch_pathlength': Avg_Branch_pathlength,
         'Avg_Width': Avg_Width, 'Avg_Depth': Avg_Depth, 'Avg_Partition_asymmetry': Avg_Partition_asymmetry,
-        'Avg_Contraction': Avg_Contraction, 'Avg_Fractal_Dim': Avg_Fractal_Dim,
+        'Avg_Contraction': Avg_Contraction, 'Avg_Fractal_Dim': Avg_Fractal_Dim, 'Avg_Fragmentation': Avg_Fragmentation,
         'Avg_Bif_ampl_remote': Avg_Bif_ampl_remote, 'nb_roots':nb_root, 'hgst_branch': hgst_branch,
+        'nb_spines': nb_spines, 'density_spines': density_spines,
     }
     
     df_dictionary = pd.DataFrame.from_dict(my_dictionary, orient='index').T
@@ -311,7 +319,8 @@ def extractcsv(filename):
     # print("Metrics: ", shollanalyzer.getMetrics())
 
 def main():
-    list_files = ["20191226_1_1_40", "20191228_1_1_40", "20191228_3_1_40", "20191229_1_1_40", "20191229_1_2_40", "20191229_2_1_40"]
+    list_files = ["20191226_1_1_40", "20191228_1_1_40", "20191228_3_1_40", "20191229_1_1_40", "20191229_1_2_40", "20191229_2_1_40",
+                  "20191229_5_1_40", "20191230_6_1"]
     data = []
 
     for img_id in list_files:

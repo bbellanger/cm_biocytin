@@ -10,6 +10,7 @@ import itertools
 import imagej
 from scyjava import *
 
+# Instanciate ImageJ
 ij = imagej.init(["sc.fiji:fiji", "org.morphonets:SNT"], mode="interactive")
 ij.ui().showUI()
 
@@ -33,6 +34,8 @@ WindowManager = jimport('ij.WindowManager')
 
 # Import tools for analysis
 TreeAnalyzer = jimport('sc.fiji.snt.analysis.TreeAnalyzer')
+StrahlerAnalyzer = jimport('sc.fiji.snt.analysis.StrahlerAnalyzer')
+ShollAnalyzer = jimport('sc.fiji.snt.analysis.ShollAnalyzer')
 
 # Modules for clustering
 import matplotlib.pyplot as plt
@@ -45,6 +48,8 @@ AllenUtils = jimport('sc.fiji.snt.annotation.AllenUtils')
 Viewer3D = jimport('sc.fiji.snt.viewer.Viewer3D')
 ColorTables = jimport('net.imagej.display.ColorTables')
 
+# tools for troubleshooting
+# from sklearn.datasets import load_iris
 
 def copyAxes(dataset, out_dataset):
     # Copy scale and axis metadata to the output.
@@ -125,6 +130,9 @@ def showLabelMask(dataset, converter):
     labelImp.show()
 
 def tracer(filename):
+    # Need to reset for looping ?
+    tree = []
+    dataset = []
     # Paths for traces and file
     filepath = f'../input/{filename}.tif'
     trace_path = f'../input/{filename}.traces'
@@ -170,32 +178,49 @@ def tracer(filename):
         fillers.append(filler)
     # FillConverter accepts a list of (completed) FillerThread instances
     converter = FillConverter(fillers)
-    showBinaryMask(dataset, converter)
-    showGrayMask(dataset, converter)
-    showLabelMask(dataset, converter)
+    # showBinaryMask(dataset, converter)
+    # showGrayMask(dataset, converter)
+    # showLabelMask(dataset, converter)
     # For some reason, the distance map
     # must be shown last for the scale bar to show correctly??
-    showDistanceMap(dataset, converter, filename)
-    time.sleep(50)
+    # showDistanceMap(dataset, converter, filename)
+    # time.sleep(1)
 
+# Sholl analysis loop input
+def sure_will(filename):
+    # load the current tree / file
+    tree = Tree(f'../input/{filename}.traces')
+    dataset = ij.io().open(f'../input/{filename}.tif')
+    # Instanciate Sholl Analyzer
+    sholl_analyzer = ShollAnalyzer(tree)
 
-# Clustering Morphologies Using Persitent Homology
-# Output a dendrogram of the population from the batch
-# def fetch_reconstruction(id_list):
-#     tree_list: []
+    # Build-up the scholl plot
+    sholl_analyzer.setPolynomialFitRange(-1, -1)
+    sholl_analyzer.setEnableCurveFitting(True)
+    sholl_analyzer.getMetrics()
+    sholl_analyzer.getSingleValueMetrics()
+    sholl_analyzer.getMaximaRadii()
+    sholl_analyzer.getSecondaryMaxima()
+    sholl_analyzer.getLinearStats()
+    sholl_analyzer.getNormStats()
+    sholl_analyzer = ShollAnalyzer(tree)
+
+    # sholl_analyzer.show()
 
 # Extract csv file with all the features from the reconstruction file
-def extractcsv(filename, data):
+def extractcsv(filename):
     # Load personal traces and stack for TreeAnalyzer
     tree = Tree(f'../input/{filename}.traces')
-    dataset = ij.io().open(f'../input/{filename}.tf')
-    # Instantiate the analyzer
+    dataset = ij.io().open(f'../input/{filename}.tif')
+    # Instantiate the analyzer + StrahlerAnalyzer
+    stra_analyzer = StrahlerAnalyzer(tree)
     analyzer = TreeAnalyzer(tree)
-    # print("Highest Path order: ", analyzer.getHighestPathOrder())
+
     # Extract the same variable as for the cm_golgi staining project
     # and use the same exact name for the variables
     Sum_Length = analyzer.getCableLength()
     # Sum_N_tips = analyzer.getNtips()
+
     Avg_Branch_pathlength = analyzer.getAvgBranchLength()
     # Nb_branchpoint = analyzer.getNbranchPoints()
     Avg_Width = analyzer.getWidth()
@@ -211,9 +236,10 @@ def extractcsv(filename, data):
     Avg_Contraction = analyzer.getAvgContraction()
     Avg_Fractal_Dim = analyzer.getAvgFractalDimension()
     # Avg_Terminal_degree =
+    Avg_Bif_ampl_remote = analyzer.getAvgRemoteBifAngle()
+
     # Max_Bif_ampl_local =
     # Max_Bif_ampl_remote =
-    Avg_Bif_ampl_remote = analyzer.getAvgRemoteBifAngle()
     # Max_Bif_tilt_local =
     # Max_Bif_tilt_remote =
     # Max_Bif_torque_local =
@@ -224,9 +250,24 @@ def extractcsv(filename, data):
     # Max_PathDistance =
     # Max_Helix =
 
+    ## Strahler analyzer
+    strahler_graph = stra_analyzer.getGraph()
+    nb_root = stra_analyzer.getRootNumber()
+    hgst_branch = stra_analyzer.getHighestBranchOrder()
+    avg_fragmentations = stra_analyzer.getAvgFragmentations()
+    avg_contractions = stra_analyzer.getAvgContractions()
+    branch_counts = stra_analyzer.getBranchCounts()
+    branch_point_cnt = stra_analyzer.getBranchPointCounts()
+
+    strahler_graph.show()
+    # Save the graph ?
+    # ij.IJ.save(strahler_graph, "../output/strahler/" + f'{filename}_Strahler_graph')
+    # time.sleep(20)
+
+
     # Print each variable output in the terminal
-    print(" ")
-    print('---------------------------------')
+    # print(" ")
+    # print('---------------------------------')
     print(" ")
     print("Neuron: ", filename)
     print(" ")
@@ -242,8 +283,14 @@ def extractcsv(filename, data):
     print("Avg remote bifurcation angle: ", Avg_Bif_ampl_remote)
     print("Avg width: ", Avg_Width)
     print(" ")
-    print('---------------------------------')
+    print("Number of roots", nb_root)
+    print("highest branch", hgst_branch)
+    print("Avg fragmentations", avg_fragmentations)
+    print("branch counts", branch_counts)
+    print("branch point count", branch_point_cnt)
     print(" ")
+    print('---------------------------------')
+    # print(" ")
 
     # Build a dictionary from the extracted variables
     # Save a csv file from it with Pandas
@@ -252,54 +299,33 @@ def extractcsv(filename, data):
         'Sum_Length': Sum_Length, 'Avg_Branch_pathlength': Avg_Branch_pathlength,
         'Avg_Width': Avg_Width, 'Avg_Depth': Avg_Depth, 'Avg_Partition_asymmetry': Avg_Partition_asymmetry,
         'Avg_Contraction': Avg_Contraction, 'Avg_Fractal_Dim': Avg_Fractal_Dim,
-        'Avg_Bif_ampl_remote': Avg_Bif_ampl_remote
+        'Avg_Bif_ampl_remote': Avg_Bif_ampl_remote, 'nb_roots':nb_root, 'hgst_branch': hgst_branch,
     }
+    
     df_dictionary = pd.DataFrame.from_dict(my_dictionary, orient='index').T
-    print(data)
+
     return df_dictionary
-    time.sleep(25)
+    # time.sleep(1)
     # Instantiate a new sholl analyzer and process the same tree
     # shollanalyzer = ShollAnalyzer(tree)
     # print("Metrics: ", shollanalyzer.getMetrics())
 
 def main():
-    list_files = pd.read_fwf("../table/list.txt", header=0)
+    list_files = ["20191226_1_1_40", "20191228_1_1_40", "20191228_3_1_40", "20191229_1_1_40", "20191229_1_2_40", "20191229_2_1_40"]
     data = []
+
     for img_id in list_files:
         filename = img_id
-        print(' ')
-        print('Input list:')
-        print(list_files)
-        # print(img_id)
-        # print(filename)
+        # sure_will(filename)
         tracer(filename)
-        dfdict = extractcsv(filename, data)
+        extractcsv(filename)
+        dfdict = extractcsv(filename)
         data.append(dfdict)
+
     data = pd.concat(data, ignore_index=True)
-    data.to_csv(f'../build/data.csv', index=False)
-    print(f'Saved:')
-    print(f'{list_files}')
-    print('features in build directory')
+    data.to_csv(f'../output/data.csv', index=False)
 
 
-# def clustering_dendrogram():
-#     list_files = pd.read_fwf("../table/list.txt", header=0)
-#     tree_list = []
-#     for filename in list_files:
-#         # Path for traces and files
-#         file_path = f'../input/{filename}.tif'
-#         trace_path = (f'../input/{filename}.traces')
-#         # Load personnal traces and stack
-#         tree = Tree(trace_path)
-#         dataset = ij.io().open(file_path)
-#         # Assign the scale metadata to the tree object
-#         # Transmits world coordinates too voxel coordinates
-#         tree.assignImage(dataset)
-#         # tree_map[tree.getLabel()[0:6]] = tree
-#         # tree.setLabel(tree.getLabel() + ' ' + group_label)
-#         tree_list.append(tree)
-#         return tree_list
+main()
 
 
-# main()
-# clustering_dendrogram()

@@ -1,0 +1,14 @@
+# Split the merged dataset into
+# DATA and labels
+
+library("tidyverse")
+
+merge_dataset = read.csv("../output/merge_dataset.csv")
+
+# Select relevant data and export as csv
+data = merge_dataset %>% select(-c(X, cell, temperature))
+write.csv(data, "../build/merge_data.csv")
+
+# Select the column corresponding to labels and export
+labels = merge_dataset %>% select(c(image))
+write.csv(labels, "../build/merge_labels.csv")

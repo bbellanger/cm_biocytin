@@ -1,0 +1,13 @@
+# This script is made to merge datasets 
+# from electrophysiology and filling_extraction.py
+
+library("tidyverse")
+
+# Import both datasets
+morpho_features = read.csv("../output/data.csv")
+electro_features = read.csv("../input/cell_stats.csv")
+
+# Merge per 'image' and save in '/output'
+
+merge_dataset = dplyr::inner_join(morpho_features, electro_features, by="image")
+write.csv(merge_dataset, "../output/merge_dataset.csv")

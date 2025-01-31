@@ -5,9 +5,9 @@ library("tidyverse")
 
 # Import both datasets
 morpho_features = read.csv("../output/data.csv")
-electro_features = read.csv("../input/cell_stats.csv")
+electro_features = read.csv("../table/cell_stats.csv")
 
-# Merge per 'image' and save in '/output'
+# Merge per 'image' and save in '/build'
 
 merge_dataset = dplyr::inner_join(morpho_features, electro_features, by="image")
-write.csv(merge_dataset, "../output/merge_dataset.csv")
+write.csv(merge_dataset, "../build/merge_dataset.csv")

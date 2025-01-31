@@ -96,7 +96,7 @@ def showDistanceMap(dataset, converter):
     )
     distanceImp.setTitle("Annotated Distance Map")
     distanceImp.show()
-    image_name = "20191230_6_1"
+    image_name = "20191226_1_1"
     fs = FileSaver(distanceImp)
     folder = "../output/img"
     filepath = folder + "/" + image_name + ".tif"
@@ -123,7 +123,7 @@ def showLabelMask(dataset, converter):
 
 def tracer():
     # Paths for traces and file
-    filename = "20191230_6_1"
+    filename = "20191226_1_1"
     filepath = f'../input/{filename}.tif'
     trace_path = f'../input/{filename}.traces'
 
@@ -188,7 +188,7 @@ def tracer():
 
 def extractcsv():
     # Load personal traces and stack for TreeAnalyzer
-    image_name = "20191230_6_1"
+    image_name = "20191226_1_1"
     tree = Tree("../input/" + image_name + ".traces")
     dataset = ij.io().open("../input/" + image_name + '.tif')
 

@@ -3,7 +3,7 @@
 
 library("tidyverse")
 
-merge_dataset = read.csv("../output/merge_dataset.csv")
+merge_dataset = read.csv("../build/merge_dataset.csv")
 
 # Select relevant data and export as csv
 data = merge_dataset %>% select(-c(X, cell, temperature))
